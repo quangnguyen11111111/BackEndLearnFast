@@ -1,6 +1,6 @@
 const { Sequelize } = require("sequelize");
 
-const sequelize = new Sequelize("appnativelearnvocabulary", "root", null, {
+const sequelize = new Sequelize("flashcard_app", "root", null, {
   host: "localhost",
   dialect: "mysql",
 });
