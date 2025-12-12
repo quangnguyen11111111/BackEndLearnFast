@@ -5,40 +5,38 @@ import { OAuth2Client } from "google-auth-library";
 const salt = bcrypt.genSaltSync(10);
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 // //Create account
-// let createNewUsers = (dataBody) => {
-//   return new Promise(async (resolve, reject) => {
-//     try {
-//       let data = {};
-//       let checkAccount = await checkAccountTrueFalse(dataBody.userAccount);
-//       if (checkAccount) {
-//         let passwordHash = await hashPassword(dataBody.userPassword);
-//         let createAccount = await db.users.create({
-//           userAccount: dataBody.userAccount,
-//           userPassword: passwordHash,
-//           userName: dataBody.userName,
-//           userGmail: dataBody.userGmail,
-//           userPhone: dataBody.userPhone,
-//         });
-//         if (createAccount) {
-//           (data.errCode = 0), (data.message = "Đăng kí thành công!!");
-//         } else {
-//           (data.errCode = 1), (data.message = "Đăng kí không thành công!!");
-//         }
-//       } else {
-//         (data.errCode = 1), (data.message = "Tài khoản đã tồn tại ??");
-//       }
-//       resolve(data);
-//     } catch (e) {
-//       reject(e);
-//     }
-//   });
-// };
+let createNewUsers = (dataBody) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let data = {};
+      let checkAccount = await checkAccountTrueFalse(dataBody.email);
+      if (checkAccount) {
+        let passwordHash = await hashPassword(dataBody.password);
+        let createAccount = await db.users.create({
+          email: dataBody.email,
+          password: passwordHash,
+          username: dataBody.username,
+        });
+        if (createAccount) {
+          (data.errCode = 0), (data.message = "Đăng kí thành công!!");
+        } else {
+          (data.errCode = 1), (data.message = "Đăng kí không thành công!!");
+        }
+      } else {
+        (data.errCode = 1), (data.message = "Tài khoản đã tồn tại ??");
+      }
+      resolve(data);
+    } catch (e) {
+      reject(e);
+    }
+  });
+};
 // // Nếu có tài khoản trả về false ngược lại là true
 let checkAccountTrueFalse = (account) => {
   return new Promise(async (resolve, reject) => {
     try {
       let check = await db.users.findOne({
-        where: { userAccount: account },
+        where: { email: account },
         raw: true,
       });
       if (check) {
@@ -63,50 +61,50 @@ let hashPassword = (password) => {
 };
 
 // // Login app
-// let LoginServices = (dataBody) => {
-//   return new Promise(async (resolve, reject) => {
-//     try {
-//       let data = {};
-//       let checkAccount = await checkAccountTrueFalse(dataBody.userAccount);
-//       if (!checkAccount) {
-//         let user = await db.users.findOne({
-//           where: { userAccount: dataBody.userAccount },
-//           raw: true,
-//         });
-//         let checkPassword = bcrypt.compareSync(
-//           dataBody.userPassword,
-//           user.userPassword
-//         );
-//         if (!checkPassword) {
-//           data.errCode = 1;
-//           data.message = "Mật khẩu không đúng";
-//           data.data = [];
-//         } else {
-//           const accessToken = generateAccessToken(user);
-//           const refreshToken = generateRefreshToken(user);
-//           await db.users.update(
-//             { refreshToken },
-//             { where: { userID: user.userID }, raw: true }
-//           );
-//           data.errCode = 0;
-//           data.message = "Đăng nhập thành công";
-//           delete user.userPassword;
-//           delete user.refreshToken;
-//           data.data = user;
-//           data.accessToken = accessToken;
-//           data.refreshToken = refreshToken;
-//         }
-//       } else {
-//         data.errCode = 1;
-//         data.message = "Tài khoản hoặc mật khẩu không chính xác";
-//         data.data = [];
-//       }
-//       resolve(data);
-//     } catch (e) {
-//       reject(e);
-//     }
-//   });
-// };
+let LoginServices = (dataBody) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let data = {};
+      let checkAccount = await checkAccountTrueFalse(dataBody.email);
+      if (!checkAccount) {
+        let user = await db.users.findOne({
+          where: { email: dataBody.email },
+          raw: true,
+        });
+        let checkPassword = bcrypt.compareSync(
+          dataBody.password,
+          user.password
+        );
+        if (!checkPassword) {
+          data.errCode = 1;
+          data.message = "Mật khẩu không đúng";
+          data.data = [];
+        } else {
+          const accessToken = generateAccessToken(user);
+          const refreshToken = generateRefreshToken(user);
+          await db.users.update(
+            { refreshToken },
+            { where: { userID: user.userID }, raw: true }
+          );
+          data.errCode = 0;
+          data.message = "Đăng nhập thành công";
+          delete user.password;
+          delete user.refreshToken;
+          data.data = user;
+          data.accessToken = accessToken;
+          data.refreshToken = refreshToken;
+        }
+      } else {
+        data.errCode = 1;
+        data.message = "Tài khoản hoặc mật khẩu không chính xác";
+        data.data = [];
+      }
+      resolve(data);
+    } catch (e) {
+      reject(e);
+    }
+  });
+};
  //generateAccessToken
 let generateAccessToken = (user) => {
   return jwt.sign(
@@ -144,14 +142,14 @@ let refreshToken = (dataBody) => {
         let user = await db.users.findOne({
           where: { userID: decoded.userID },
         });
-        if (!user || user.refreshToken !== dataBody) {
+        if (!user) {
           (data.errCode = 4), (data.message = "Token không hợp lệ");
         } else {
           const newAccessToken = generateAccessToken(user);
           (data.errCode = 0),
             (data.message = "Token làm mới thành công"),
             (data.newAccessToken = newAccessToken);
-          delete user.userPassword;
+          delete user.password;
           data.data = user;
         }
       } catch (error) {
@@ -241,8 +239,8 @@ const verifyGoogleToken = async (idToken) => {
   };
 };
 module.exports = {
-//   createNewUsers: createNewUsers,
-//   LoginServices: LoginServices,
+  createNewUsers: createNewUsers,
+  LoginServices: LoginServices,
   refreshToken: refreshToken,
   loginWithGoogleService: loginWithGoogleService,
 };

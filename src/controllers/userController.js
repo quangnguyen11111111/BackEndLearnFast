@@ -1,37 +1,42 @@
 import userService from "../services/userService"
-
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // //Tạo mới người dùng
-// let handleCreateUser = async(req,res)=>
-// {
-//     if (!req.body) {
-//         return res.status(500).json({
-//             errCode:1,
-//             message:"Không được bỏ trống dữ liệu"
-//         })
-//     }
-//     let data = await userService.createNewUsers(req.body)
-//     return res.status(200).json({
-//         errCode:data.errCode,
-//         message:data.message
-//     })
-// }
+let handleCreateUser = async(req,res)=>
+{
+    if (!req.body.email||!req.body.password||!req.body.username) {
+        return res.status(500).json({
+            errCode:1,
+            message:"Không được bỏ trống dữ liệu"
+        })
+    }else if (!emailRegex.test(req.body.email)) {
+        return res.status(500).json({
+            errCode:1,
+            message:"Email không đúng định dạng"
+        })
+    }
+    let data = await userService.createNewUsers(req.body)
+    return res.status(200).json({
+        errCode:data.errCode,
+        message:data.message
+    })
+}
 // //Đăng nhập local
-// let handleLogin=async(req,res)=>{
-//     if (!req.body.userAccount||!req.body.userPassword) {
-//         return res.status(500).json({
-//             errCode:1,
-//             message:"Không được để trống dữ liệu"
-//         })
-//     }
-//     let data = await userService.LoginServices(req.body)
-//     return res.status(200).json({
-//         errCode:data.errCode,
-//         message:data.message,
-//         data:data.data,
-//         accessToken:data.accessToken,
-//         refreshToken:data.refreshToken
-//     })
-// }
+let handleLoginLocal=async(req,res)=>{
+    if (!req.body.email||!req.body.password) {
+        return res.status(500).json({
+            errCode:1,
+            message:"Không được để trống dữ liệu"
+        })
+    }
+    let data = await userService.LoginServices(req.body)
+    return res.status(200).json({
+        errCode:data.errCode,
+        message:data.message,
+        data:data.data,
+        accessToken:data.accessToken,
+        refreshToken:data.refreshToken
+    })
+}
 // //làm mới token
 let handleRefreshToken = async(req,res)=>{
     if (!req.body.refreshToken) {
@@ -66,8 +71,8 @@ let handleLoginWithGoogle=async(req,res)=>{
 }
 module.exports = {
 
-    // handleCreateUser:handleCreateUser,
-    // handleLogin:handleLogin,
+    handleCreateUser:handleCreateUser,
+    handleLoginLocal:handleLoginLocal,
     handleRefreshToken:handleRefreshToken,
     handleLoginWithGoogle:handleLoginWithGoogle
   };
