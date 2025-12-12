@@ -17,6 +17,7 @@ let initWebRoutes = (app) => {
 //   //file
 //   router.get('/api/getAllDetailFile',fileController.handleGetAllDetailFile)// lấy dữ liệu chi tiết của file
 //   router.post('/api/createNewFile', fileController.handleCreateFile)
+router.post('/api/files', fileController.handleCreateFile) // tạo file mới
   return app.use("/", router)
 };
 

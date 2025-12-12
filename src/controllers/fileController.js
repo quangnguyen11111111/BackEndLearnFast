@@ -1,4 +1,4 @@
-// import fileService from '../services/fileService'
+import fileService from '../services/fileService'
 // let handleGetAllDetailFile = async(req,res)=>{
 //     let fileID = req.query.fileID
 //     let fileName = req.query.fileName
@@ -17,16 +17,22 @@
 // }
 
 // //hàm tạo file
-// let handleCreateFile = async(req,res)=>{
-//     let data = await fileService.createFileService(req.body)
-//     return res.status(200).json({
-//         errCode:data.errCode,
-//         message:data.message,
-//         data:data.data
-//     }) 
-// }
+let handleCreateFile = async(req,res)=>{
+    if (!req.body.fileName || !req.body.userID || !req.body.visibility || !req.body.arrFileDetail) {
+        return res.status(500).json({
+            errCode:1,
+            message:"Không được bỏ trống dữ liệu"
+        })
+    }
+    let data = await fileService.createFileService(req.body)
+    return res.status(200).json({
+        errCode:data.errCode,
+        message:data.message,
+        data:data.data
+    }) 
+}
 
-// module.exports={
-//     handleGetAllDetailFile:handleGetAllDetailFile,
-//     handleCreateFile:handleCreateFile
-// }
+module.exports={
+    // handleGetAllDetailFile:handleGetAllDetailFile,
+    handleCreateFile:handleCreateFile
+}

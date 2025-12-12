@@ -36,7 +36,7 @@ module.exports = (sequelize) => {
       },
       visibility: {
         type: DataTypes.ENUM("public", "private"),
-        defaultValue: "private",
+        defaultValue: "public",
       },
       createdAt: {
         type: DataTypes.DATE,
