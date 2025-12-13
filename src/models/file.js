@@ -19,7 +19,8 @@ module.exports = (sequelize) => {
   file.init(
     {
       fileID: {
-        type: DataTypes.CHAR(36),
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
         primaryKey: true,
       },
       fileName: {

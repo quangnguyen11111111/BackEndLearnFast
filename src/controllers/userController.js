@@ -44,7 +44,7 @@ let handleRefreshToken = async(req,res)=>{
             errCode:1,
             message: "Không có token" });
     }
-    let data = await userService.refreshToken(req.body.refreshToken)
+    let data = await userService.refreshTokenService(req.body.refreshToken)
     return res.status(200).json({
         errCode:data.errCode,
         message:data.message,

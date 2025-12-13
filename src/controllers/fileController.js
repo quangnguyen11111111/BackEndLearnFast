@@ -17,8 +17,8 @@ import fileService from '../services/fileService'
 // }
 
 // //hàm tạo file
-let handleCreateFile = async(req,res)=>{
-    if (!req.body.fileName || !req.body.userID || !req.body.visibility || !req.body.arrFileDetail) {
+const handleCreateFile = async(req,res)=>{
+    if (!req.body.fileName || !req.body.creatorID  || !req.body.arrFileDetail) {
         return res.status(500).json({
             errCode:1,
             message:"Không được bỏ trống dữ liệu"
@@ -31,8 +31,34 @@ let handleCreateFile = async(req,res)=>{
         data:data.data
     }) 
 }
-
+const handleGetDetailFile = async (req, res) => {
+    const fileID = req.query.fileID;
+    const userID = req.query.userID || null;
+    
+    if (!fileID) {
+        return res.status(400).json({
+            errCode: 1,
+            message: "Vui lòng truyền fileID"
+        })
+    }
+    
+    try {
+        let data = await fileService.getDetailFileService(fileID, userID);
+        return res.status(200).json({
+            errCode: data.errCode,
+            message: data.message,
+            data: data.data
+        });
+    } catch (error) {
+        return res.status(500).json({
+            errCode: 2,
+            message: "Lỗi server",
+            error: error.message
+        });
+    }
+}
 module.exports={
     // handleGetAllDetailFile:handleGetAllDetailFile,
-    handleCreateFile:handleCreateFile
+    handleCreateFile:handleCreateFile,
+    handleGetDetailFile:handleGetDetailFile
 }
