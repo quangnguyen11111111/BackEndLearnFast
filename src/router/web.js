@@ -19,6 +19,7 @@ let initWebRoutes = (app) => {
 //   router.post('/api/createNewFile', fileController.handleCreateFile)
 router.post('/api/files', fileController.handleCreateFile) // tạo file mới
 router.get('/api/files/detail', fileController.handleGetDetailFile) // lấy dữ liệu chi tiết của file
+router.get('/api/files/recently', fileController.handleGetRecentlyFiles) // lấy các file gần đây mà người dùng đã truy cập
   return app.use("/", router)
 };
 

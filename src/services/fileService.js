@@ -180,8 +180,48 @@ const getDetailFileService = async (fileID, userID = null) => {
   }
 };
 
+// Lấy tối đa 12 file người dùng đã truy cập, sắp xếp lần truy cập đầu tiên ở đầu danh sách
+const getRecentlyFiles = async (userID) => {
+  try {
+    const response = {
+      errCode: 0,
+      message: "Lấy dữ liệu thành công",
+      data: [],
+    };
+
+    const histories = await db.user_file_history.findAll({
+      where: { userID },
+      include: [
+        {
+          model: db.file,
+          attributes: ["fileID", "fileName"],
+        },
+      ],
+      order: [["openedAt", "ASC"]],
+      limit: 12,
+    });
+
+    if (!histories || histories.length === 0) {
+      response.message = "Không có lịch sử truy cập";
+      return response;
+    }
+
+    response.data = histories.map((item) => ({
+      fileID: item.fileID,
+      fileName: item.file ? item.file.fileName : null,
+      openedAt: item.openedAt,
+    }));
+
+    return response;
+  } catch (error) {
+    console.error("Lỗi khi lấy lịch sử file gần đây:", error);
+    throw error;
+  }
+};
+
 module.exports = {
   // getAllDetailFileService:getAllDetailFileService,
   // createFileService: createFileService,
   getDetailFileService: getDetailFileService,
+  getRecentlyFiles: getRecentlyFiles,
 };
