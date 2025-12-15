@@ -21,6 +21,7 @@ let initWebRoutes = (app) => {
   router.get("/api/files/detail", fileController.handleGetDetailFile); // lấy dữ liệu chi tiết của file
   router.get("/api/files/recently", fileController.handleGetRecentlyFiles); // lấy các file gần đây mà người dùng đã truy cập
   router.get("/api/files/search", fileController.handleSearchFiles); // tìm kiếm file theo tên kèm phân trang
+  router.get("/api/files/top", fileController.handleGetTopFiles); // lấy top 6 bộ thẻ được truy cập nhiều nhất
   
   return app.use("/", router);
 };

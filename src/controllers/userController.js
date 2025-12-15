@@ -14,11 +14,18 @@ let handleCreateUser = async(req,res)=>
             message:"Email không đúng định dạng"
         })
     }
-    let data = await userService.createNewUsers(req.body)
+    try {
+        let data = await userService.createNewUsers(req.body)
     return res.status(200).json({
         errCode:data.errCode,
         message:data.message
     })
+    } catch (error) {
+        return res.status(500).json({
+            errCode:2,
+            message:"Lỗi server"
+        })
+    }
 }
 // //Đăng nhập local
 let handleLoginLocal=async(req,res)=>{
@@ -28,14 +35,21 @@ let handleLoginLocal=async(req,res)=>{
             message:"Không được để trống dữ liệu"
         })
     }
-    let data = await userService.LoginServices(req.body)
-    return res.status(200).json({
-        errCode:data.errCode,
-        message:data.message,
-        data:data.data,
-        accessToken:data.accessToken,
-        refreshToken:data.refreshToken
-    })
+    try {
+        let data = await userService.loginLocalService(req.body.email,req.body.password)
+        return res.status(200).json({
+            errCode:data.errCode,
+            message:data.message,
+            data:data.data,
+            accessToken:data.accessToken,
+            refreshToken:data.refreshToken
+        })
+    } catch (error) {
+        return res.status(500).json({
+            errCode:2,
+            message:"Lỗi server"
+        })
+    }
 }
 // //làm mới token
 let handleRefreshToken = async(req,res)=>{
@@ -44,13 +58,20 @@ let handleRefreshToken = async(req,res)=>{
             errCode:1,
             message: "Không có token" });
     }
-    let data = await userService.refreshTokenService(req.body.refreshToken)
-    return res.status(200).json({
-        errCode:data.errCode,
-        message:data.message,
-        accessToken:data.newAccessToken,
-        data:data.data
-    })
+    try {
+      let data = await userService.refreshTokenService(req.body.refreshToken);
+      return res.status(200).json({
+        errCode: data.errCode,
+        message: data.message,
+        newAccessToken: data.newAccessToken,
+        data: data.data,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        errCode: 2,
+        message: "Lỗi server",
+      });
+    }
 } 
 // //đăng nhập bằng google
 let handleLoginWithGoogle=async(req,res)=>{
@@ -60,7 +81,8 @@ let handleLoginWithGoogle=async(req,res)=>{
             message:"Không được để trống dữ liệu"
         })
     }
-    let data = await userService.loginWithGoogleService(req.body.token)
+   try {
+    let data = await userService.loginWithGoogleService(req.body.idToken)
     return res.status(200).json({
         errCode:data.errCode,
         message:data.message,
@@ -68,6 +90,12 @@ let handleLoginWithGoogle=async(req,res)=>{
         accessToken:data.accessToken,
         refreshToken:data.refreshToken
     })
+   } catch (error) {
+    return res.status(500).json({
+        errCode:2,
+        message:"Lỗi server"
+    })
+   }
 }
 module.exports = {
 

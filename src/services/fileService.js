@@ -273,8 +273,48 @@ const searchFilesService = async (query = "", page = 1, limit = 10) => {
     }
   };
 
+  //Lấy dữ liệu top 6 file được truy cập nhiều nhất
+  const getTopFiles = async () => {
+    try {
+      const data = {};
+      const topFiles = await db.file.findAll({
+        attributes: [
+          "fileID",
+          "fileName",
+          "visibility",
+          "createdAt",
+          [db.sequelize.fn("COUNT", db.sequelize.col("user_file_history.fileID")), "accessCount"],
+        ],
+        include: [ 
+          {
+            model: db.user_file_history,
+            attributes: [],
+          },
+        ],
+        group: ["file.fileID"],
+        order: [[db.sequelize.literal("accessCount"), "DESC"]],
+        limit: 6,
+        raw: true,
+      });
+      if (topFiles) {
+        data.errCode = 0;
+        data.message = "Lấy top file thành công";
+        data.data = topFiles;
+      } else {
+        data.errCode = 1;
+        data.message = "Không có file nào";
+        data.data = [];
+      }
+      return data;
+    } catch (error) {
+      console.error("Lỗi khi lấy top file:", error);
+      throw error;
+    }
+  };
+
 module.exports = {
   getDetailFileService: getDetailFileService,
   getRecentlyFiles: getRecentlyFiles,
   searchFilesService: searchFilesService,
+  getTopFiles: getTopFiles,
 };
