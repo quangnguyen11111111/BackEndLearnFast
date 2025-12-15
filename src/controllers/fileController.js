@@ -1,4 +1,5 @@
-import fileService from "../services/fileService";
+import fileService from "../services/fileServices/createFile";
+import fileService1 from "../services/fileService";
 // let handleGetAllDetailFile = async(req,res)=>{
 //     let fileID = req.query.fileID
 //     let fileName = req.query.fileName
@@ -43,7 +44,7 @@ const handleGetDetailFile = async (req, res) => {
   }
 
   try {
-    let data = await fileService.getDetailFileService(fileID, userID);
+    let data = await fileService1.getDetailFileService(fileID, userID);
     return res.status(200).json({
       errCode: data.errCode,
       message: data.message,
@@ -69,8 +70,28 @@ const handleGetRecentlyFiles = async (req, res) => {
   }
 
   try {
-    const data = await fileService.getRecentlyFiles(userID);
+    const data = await fileService1.getRecentlyFiles(userID);
     return res.status(200).json(data);
+  } catch (error) {
+    return res.status(500).json({
+      errCode: 2,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
+
+const handleSearchFiles = async (req, res) => {
+  const { q = "", page = 1, limit = 10 } = req.query;
+  if (q === "") {
+    return res.status(400).json({
+      errCode: 1,
+      message: "Vui lòng truyền từ khóa tìm kiếm",
+    });
+  }
+  try {
+    const result = await fileService1.searchFilesService(q, page, limit);
+    return res.status(200).json(result);
   } catch (error) {
     return res.status(500).json({
       errCode: 2,
@@ -84,4 +105,5 @@ module.exports = {
   handleCreateFile: handleCreateFile,
   handleGetDetailFile: handleGetDetailFile,
   handleGetRecentlyFiles: handleGetRecentlyFiles,
+  handleSearchFiles: handleSearchFiles,
 };

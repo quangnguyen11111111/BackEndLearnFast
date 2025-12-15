@@ -21,7 +21,6 @@ module.exports = (sequelize) => {
       },
       openedAt: {
         type: DataTypes.DATE,
-        primaryKey: true,
         defaultValue: DataTypes.NOW,
       },
     },

@@ -137,6 +137,17 @@ const getDetailFileService = async (fileID, userID = null) => {
       }));
       return data;
     }
+    // Lưu lịch sử truy cập file
+
+    try {
+      await db.user_file_history.upsert({
+        userID,
+        fileID,
+        openedAt: new Date(),
+      });
+    } catch (historyError) {
+      console.log("Lưu lịch sử truy cập:", historyError.message);
+    }
 
     // Nếu có userID, lấy tiến độ học và tạo nếu chưa có
     const detailsWithProgress = await Promise.all(
@@ -189,16 +200,13 @@ const getRecentlyFiles = async (userID) => {
       data: [],
     };
 
+    // Lấy danh sách fileID từ user_file_history
     const histories = await db.user_file_history.findAll({
       where: { userID },
-      include: [
-        {
-          model: db.file,
-          attributes: ["fileID", "fileName"],
-        },
-      ],
-      order: [["openedAt", "ASC"]],
+      attributes: ["fileID", "openedAt"],
+      order: [["openedAt", "DESC"]],
       limit: 12,
+      raw: true,
     });
 
     if (!histories || histories.length === 0) {
@@ -206,9 +214,23 @@ const getRecentlyFiles = async (userID) => {
       return response;
     }
 
+    // Lấy thông tin file riêng
+    const fileIDs = histories.map((h) => h.fileID);
+    const files = await db.file.findAll({
+      where: { fileID: fileIDs },
+      attributes: ["fileID", "fileName"],
+      raw: true,
+    });
+
+    // Map dữ liệu
+    const fileMap = {};
+    files.forEach((f) => {
+      fileMap[f.fileID] = f.fileName;
+    });
+
     response.data = histories.map((item) => ({
       fileID: item.fileID,
-      fileName: item.file ? item.file.fileName : null,
+      fileName: fileMap[item.fileID] || null,
       openedAt: item.openedAt,
     }));
 
@@ -218,10 +240,41 @@ const getRecentlyFiles = async (userID) => {
     throw error;
   }
 };
+// Tìm kiếm file theo tên kèm phân trang
+const searchFilesService = async (query = "", page = 1, limit = 10) => {
+    try {
+      const q = String(query).trim();
+      const currentPage = Math.max(parseInt(page, 10) || 1, 1);
+      const pageSize = Math.max(parseInt(limit, 10) || 10, 1);
+
+      const { count, rows } = await db.file.findAndCountAll({
+        where: { fileName: { [db.Sequelize.Op.like]: `%${q}%` } },
+        attributes: ["fileID", "fileName", "visibility", "createdAt"],
+        order: [["createdAt", "DESC"]],
+        offset: (currentPage - 1) * pageSize,
+        limit: pageSize,
+        raw: true,
+      });
+
+      return {
+        errCode: 0,
+        message: "Lấy dữ liệu thành công",
+        data: rows,
+        pagination: {
+          total: count,
+          page: currentPage,
+          limit: pageSize,
+          pageCount: Math.ceil(count / pageSize),
+        },
+      };
+    } catch (error) {
+      console.error("Lỗi tìm kiếm files:", error);
+      return { errCode: 2, message: "Lỗi server", data: [] };
+    }
+  };
 
 module.exports = {
-  // getAllDetailFileService:getAllDetailFileService,
-  // createFileService: createFileService,
   getDetailFileService: getDetailFileService,
   getRecentlyFiles: getRecentlyFiles,
+  searchFilesService: searchFilesService,
 };
