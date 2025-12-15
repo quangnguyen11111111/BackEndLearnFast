@@ -274,16 +274,17 @@ const searchFilesService = async (query = "", page = 1, limit = 10) => {
   };
 
   //Lấy dữ liệu top 6 file được truy cập nhiều nhất
-  const getTopFiles = async () => {
+  const getTopFilesService = async () => {
     try {
       const data = {};
       const topFiles = await db.file.findAll({
+         subQuery: false,
         attributes: [
           "fileID",
           "fileName",
           "visibility",
           "createdAt",
-          [db.sequelize.fn("COUNT", db.sequelize.col("user_file_history.fileID")), "accessCount"],
+          [db.sequelize.fn("COUNT", db.sequelize.col("user_file_histories.fileID")), "accessCount"],
         ],
         include: [ 
           {
@@ -316,5 +317,5 @@ module.exports = {
   getDetailFileService: getDetailFileService,
   getRecentlyFiles: getRecentlyFiles,
   searchFilesService: searchFilesService,
-  getTopFiles: getTopFiles,
+  getTopFilesService: getTopFilesService,
 };
