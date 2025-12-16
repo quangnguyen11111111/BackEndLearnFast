@@ -109,6 +109,7 @@ const handleSearchFiles = async (req, res) => {
     });
   }
 };
+// lấy top 6 bộ thẻ được truy cập nhiều nhất
 const handleGetTopFiles = async (req, res) => {
   try {
     const result = await fileService1.getTopFilesService();
@@ -121,6 +122,26 @@ const handleGetTopFiles = async (req, res) => {
     });
   }
 };
+// lấy các file tương tự mà người dùng hay truy cập(dựa trên lịch sử truy cập, lấy ra 6 file)
+const handleGetSimilarFiles = async (req, res) => {
+  const { userID } = req.query;
+  if (!userID) {
+    return res.status(400).json({
+      errCode: 1,
+      message: "Vui lòng truyền userID",
+    });
+  }
+  try {
+    const result = await fileService1.getSimilarFilesService(userID);
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(500).json({
+      errCode: 2,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  } 
+};
 module.exports = {
   // handleGetAllDetailFile:handleGetAllDetailFile,
   handleCreateFile: handleCreateFile,
@@ -128,4 +149,5 @@ module.exports = {
   handleGetRecentlyFiles: handleGetRecentlyFiles,
   handleSearchFiles: handleSearchFiles,
   handleGetTopFiles: handleGetTopFiles,
+  handleGetSimilarFiles: handleGetSimilarFiles,
 };

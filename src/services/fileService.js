@@ -242,80 +242,87 @@ const getRecentlyFiles = async (userID) => {
 };
 // Tìm kiếm file theo tên kèm phân trang
 const searchFilesService = async (query = "", page = 1, limit = 10) => {
-    try {
-      const q = String(query).trim();
-      const currentPage = Math.max(parseInt(page, 10) || 1, 1);
-      const pageSize = Math.max(parseInt(limit, 10) || 10, 1);
+  try {
+    const q = String(query).trim();
+    const currentPage = Math.max(parseInt(page, 10) || 1, 1);
+    const pageSize = Math.max(parseInt(limit, 10) || 10, 1);
 
-      const { count, rows } = await db.file.findAndCountAll({
-        where: { fileName: { [db.Sequelize.Op.like]: `%${q}%` } },
-        attributes: ["fileID", "fileName", "visibility", "createdAt"],
-        order: [["createdAt", "DESC"]],
-        offset: (currentPage - 1) * pageSize,
+    const { count, rows } = await db.file.findAndCountAll({
+      where: { fileName: { [db.Sequelize.Op.like]: `%${q}%` } },
+      attributes: ["fileID", "fileName", "visibility", "createdAt"],
+      order: [["createdAt", "DESC"]],
+      offset: (currentPage - 1) * pageSize,
+      limit: pageSize,
+      raw: true,
+    });
+
+    return {
+      errCode: 0,
+      message: "Lấy dữ liệu thành công",
+      data: rows,
+      pagination: {
+        total: count,
+        page: currentPage,
         limit: pageSize,
-        raw: true,
-      });
+        pageCount: Math.ceil(count / pageSize),
+      },
+    };
+  } catch (error) {
+    console.error("Lỗi tìm kiếm files:", error);
+    return { errCode: 2, message: "Lỗi server", data: [] };
+  }
+};
 
-      return {
-        errCode: 0,
-        message: "Lấy dữ liệu thành công",
-        data: rows,
-        pagination: {
-          total: count,
-          page: currentPage,
-          limit: pageSize,
-          pageCount: Math.ceil(count / pageSize),
+//Lấy dữ liệu top 6 file được truy cập nhiều nhất
+const getTopFilesService = async () => {
+  try {
+    const data = {};
+    const topFiles = await db.file.findAll({
+      subQuery: false,
+      attributes: [
+        "fileID",
+        "fileName",
+        "visibility",
+        "createdAt",
+        [
+          db.sequelize.fn(
+            "COUNT",
+            db.sequelize.col("user_file_histories.fileID")
+          ),
+          "accessCount",
+        ],
+      ],
+      include: [
+        {
+          model: db.user_file_history,
+          attributes: [],
         },
-      };
-    } catch (error) {
-      console.error("Lỗi tìm kiếm files:", error);
-      return { errCode: 2, message: "Lỗi server", data: [] };
+      ],
+      group: ["file.fileID"],
+      order: [[db.sequelize.literal("accessCount"), "DESC"]],
+      limit: 6,
+      raw: true,
+    });
+    if (topFiles) {
+      data.errCode = 0;
+      data.message = "Lấy top file thành công";
+      data.data = topFiles;
+    } else {
+      data.errCode = 1;
+      data.message = "Không có file nào";
+      data.data = [];
     }
-  };
-
-  //Lấy dữ liệu top 6 file được truy cập nhiều nhất
-  const getTopFilesService = async () => {
-    try {
-      const data = {};
-      const topFiles = await db.file.findAll({
-         subQuery: false,
-        attributes: [
-          "fileID",
-          "fileName",
-          "visibility",
-          "createdAt",
-          [db.sequelize.fn("COUNT", db.sequelize.col("user_file_histories.fileID")), "accessCount"],
-        ],
-        include: [ 
-          {
-            model: db.user_file_history,
-            attributes: [],
-          },
-        ],
-        group: ["file.fileID"],
-        order: [[db.sequelize.literal("accessCount"), "DESC"]],
-        limit: 6,
-        raw: true,
-      });
-      if (topFiles) {
-        data.errCode = 0;
-        data.message = "Lấy top file thành công";
-        data.data = topFiles;
-      } else {
-        data.errCode = 1;
-        data.message = "Không có file nào";
-        data.data = [];
-      }
-      return data;
-    } catch (error) {
-      console.error("Lỗi khi lấy top file:", error);
-      throw error;
-    }
-  };
+    return data;
+  } catch (error) {
+    console.error("Lỗi khi lấy top file:", error);
+    throw error;
+  }
+};
 
 module.exports = {
   getDetailFileService: getDetailFileService,
   getRecentlyFiles: getRecentlyFiles,
   searchFilesService: searchFilesService,
   getTopFilesService: getTopFilesService,
+  getSimilarFilesService: getSimilarFilesService,
 };

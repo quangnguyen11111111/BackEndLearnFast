@@ -22,6 +22,8 @@ let initWebRoutes = (app) => {
   router.get("/api/files/recently", fileController.handleGetRecentlyFiles); // lấy các file gần đây mà người dùng đã truy cập
   router.get("/api/files/search", fileController.handleSearchFiles); // tìm kiếm file theo tên kèm phân trang
   router.get("/api/files/top", fileController.handleGetTopFiles); // lấy top 6 bộ thẻ được truy cập nhiều nhất
+  // lấy các file tương tự mà người dùng hay truy cập(dựa trên lịch sử truy cập, lấy ra 6 file có cùng chủ đề và được truy cập nhiều nhất)
+  router.get("/api/files/similar", fileController.handleGetSimilarFiles);
   
   return app.use("/", router);
 };
