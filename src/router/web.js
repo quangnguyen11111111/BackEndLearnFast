@@ -22,9 +22,12 @@ let initWebRoutes = (app) => {
   router.get("/api/files/recently", fileController.handleGetRecentlyFiles); // lấy các file gần đây mà người dùng đã truy cập
   router.get("/api/files/search", fileController.handleSearchFiles); // tìm kiếm file theo tên kèm phân trang
   router.get("/api/files/top", fileController.handleGetTopFiles); // lấy top 6 bộ thẻ được truy cập nhiều nhất
-  // lấy các file tương tự mà người dùng hay truy cập(dựa trên lịch sử truy cập, lấy ra 6 file có cùng chủ đề và được truy cập nhiều nhất)
-  router.get("/api/files/similar", fileController.handleGetSimilarFiles);
-  
+  router.get("/api/files/similar", fileController.handleGetSimilarFiles); // lấy các file tương tự mà người dùng hay truy cập
+  router.get("/api/files/user", fileController.handleGetAllFilesOfUser);//lấy tất cả các file mà người dùng đã tạo
+  // cập nhật file (phải kiểm tra đó có đúng là người sở hữu file không)
+  router.put("/api/files", fileController.handleUpdateFile);
+  // cập nhật quá trình học tập của người dùng
+  router.put("/api/files/progress", fileController.handleUpdateLearningProgress);
   return app.use("/", router);
 };
 

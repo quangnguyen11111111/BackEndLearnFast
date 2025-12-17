@@ -1,21 +1,6 @@
-import fileService from "../services/fileServices/createFile";
-import fileService1 from "../services/fileService";
-// const handleGetAllDetailFile = async(req,res)=>{
-//     const fileID = req.query.fileID
-//     const fileName = req.query.fileName
-//     if (!fileID) {
-//         return res.status(500).json({
-//             errCode:2,
-//             message:"vui lòng truyền fileID"
-//         })
-//     }
-//     const data = await fileService.getAllDetailFileService(fileID)
-//     return res.status(200).json({
-//         errCode:data.errCode,
-//         data:data.data,
-//         fileName:fileName
-//     })
-// }
+import fileServiceCreateFile from "../services/fileServices/createFile";
+import fileServiceGetFile from "../services/fileServices/getFile";
+import fileService from "../services/fileService";
 
 // //hàm tạo file
 const handleCreateFile = async (req, res) => {
@@ -26,7 +11,7 @@ const handleCreateFile = async (req, res) => {
     });
   }
   try {
-    const data = await fileService.createFileService(req.body);
+    const data = await fileServiceCreateFile.createFileService(req.body);
     return res.status(200).json({
       errCode: data.errCode,
       message: data.message,
@@ -40,6 +25,7 @@ const handleCreateFile = async (req, res) => {
     });
   }
 };
+// --------------------- lấy dữ liệu file -----------------------
 //lấy dữ liệu chi tiết của file
 const handleGetDetailFile = async (req, res) => {
   const fileID = req.query.fileID;
@@ -53,7 +39,7 @@ const handleGetDetailFile = async (req, res) => {
   }
 
   try {
-    const data = await fileService1.getDetailFileService(fileID, userID);
+    const data = await fileServiceGetFile.getDetailFileService(fileID, userID);
     return res.status(200).json({
       errCode: data.errCode,
       message: data.message,
@@ -79,7 +65,7 @@ const handleGetRecentlyFiles = async (req, res) => {
   }
 
   try {
-    const data = await fileService1.getRecentlyFiles(userID);
+    const data = await fileServiceGetFile.getRecentlyFiles(userID);
     return res.status(200).json(data);
   } catch (error) {
     return res.status(500).json({
@@ -99,7 +85,7 @@ const handleSearchFiles = async (req, res) => {
     });
   }
   try {
-    const result = await fileService1.searchFilesService(q, page, limit);
+    const result = await fileServiceGetFile.searchFilesService(q, page, limit);
     return res.status(200).json(result);
   } catch (error) {
     return res.status(500).json({
@@ -112,7 +98,7 @@ const handleSearchFiles = async (req, res) => {
 // lấy top 6 bộ thẻ được truy cập nhiều nhất
 const handleGetTopFiles = async (req, res) => {
   try {
-    const result = await fileService1.getTopFilesService();
+    const result = await fileServiceGetFile.getTopFilesService();
     return res.status(200).json(result);
   } catch (error) {
     return res.status(500).json({
@@ -132,7 +118,7 @@ const handleGetSimilarFiles = async (req, res) => {
     });
   }
   try {
-    const result = await fileService1.getSimilarFilesService(userID);
+    const result = await fileServiceGetFile.getSimilarFilesService(userID);
     return res.status(200).json(result);
   } catch (error) {
     return res.status(500).json({
@@ -140,8 +126,55 @@ const handleGetSimilarFiles = async (req, res) => {
       message: "Lỗi server",
       error: error.message,
     });
-  } 
+  }
 };
+//lấy tất cả các file mà người dùng đã tạo
+const handleGetAllFilesOfUser = async (req, res) => {
+  const { userID } = req.query;
+  if (!userID) {
+    return res.status(400).json({
+      errCode: 1,
+      message: "Vui lòng truyền userID",
+    });
+  }
+  try {
+    const result = await fileServiceGetFile.getAllFilesOfUserService(userID);
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(500).json({
+      errCode: 2,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
+// --------------------- cập nhật file -----------------------
+const handleUpdateFile = async (req, res) => {
+  const { fileID, creatorID, fileName, visibility, arrFileDetail } = req.body;
+
+  if (!fileID || !creatorID) {
+    return res.status(400).json({
+      errCode: 1,
+      message: "Vui lòng truyền fileID và creatorID",
+    });
+  }
+  try {
+    const result = await fileService.updateFileService({
+      fileID,
+      creatorID,
+      fileName,
+      visibility,
+      arrFileDetail,
+    });
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(500).json({
+      errCode: 2,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+}
 module.exports = {
   // handleGetAllDetailFile:handleGetAllDetailFile,
   handleCreateFile: handleCreateFile,
@@ -150,4 +183,6 @@ module.exports = {
   handleSearchFiles: handleSearchFiles,
   handleGetTopFiles: handleGetTopFiles,
   handleGetSimilarFiles: handleGetSimilarFiles,
+  handleGetAllFilesOfUser: handleGetAllFilesOfUser,
+  handleUpdateFile: handleUpdateFile,
 };
