@@ -81,6 +81,32 @@ const updateFileService = async (dataBody) => {
   }
 };
 
+const handleUpdateLearningProgress = async (req, res) => {
+  const { userID, fileID, detailID, flashcardState, quizState } = req.body;
+  if (!userID || !fileID || !detailID) {
+    return res.status(400).json({
+      errCode: 1,
+      message: "Vui lòng truyền đầy đủ userID, fileID và detailID",
+    });
+  }
+  try {
+    const data = await fileServiceUpdateLearningProgress.updateLearningProgressService(
+      { userID, fileID, detailID, flashcardState, quizState }
+    );
+    return res.status(200).json({
+      errCode: data.errCode,
+      message: data.message,
+      data: data.data,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      errCode: 2,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
 module.exports = {
   updateFileService,
+  handleUpdateLearningProgress
 };

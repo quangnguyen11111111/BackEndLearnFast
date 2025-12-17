@@ -175,6 +175,29 @@ const handleUpdateFile = async (req, res) => {
     });
   }
 }
+const handleUpdateLearningProgress = async (req, res) => {
+  const { fileID, userID, progress } = req.body;
+  if (!fileID || !userID || progress === undefined) {
+    return res.status(400).json({
+      errCode: 1,
+      message: "Vui lòng truyền fileID, userID và progress",
+    });
+  }
+  try {
+    const result = await fileService.updateLearningProgressService({
+      fileID,
+      userID,
+      progress,
+    });
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(500).json({
+      errCode: 2,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
 module.exports = {
   // handleGetAllDetailFile:handleGetAllDetailFile,
   handleCreateFile: handleCreateFile,
@@ -185,4 +208,5 @@ module.exports = {
   handleGetSimilarFiles: handleGetSimilarFiles,
   handleGetAllFilesOfUser: handleGetAllFilesOfUser,
   handleUpdateFile: handleUpdateFile,
+  handleUpdateLearningProgress: handleUpdateLearningProgress,
 };
