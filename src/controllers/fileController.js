@@ -1,5 +1,6 @@
 import fileServiceCreateFile from "../services/fileServices/createFile";
 import fileServiceGetFile from "../services/fileServices/getFile";
+import fileServiceUpdateLearningProgress from "../services/fileServices/updateLearningProgress";
 import fileService from "../services/fileService";
 
 // //hàm tạo file
@@ -174,21 +175,29 @@ const handleUpdateFile = async (req, res) => {
       error: error.message,
     });
   }
-}
+};
+
+// --------------------- cập nhật tiến độ học tập -----------------------
 const handleUpdateLearningProgress = async (req, res) => {
-  const { fileID, userID, progress } = req.body;
-  if (!fileID || !userID || progress === undefined) {
+  const { userID, fileID, detailID, flashcardState, quizState } =
+    req.body || {};
+
+  if (!userID || !fileID || !detailID) {
     return res.status(400).json({
       errCode: 1,
-      message: "Vui lòng truyền fileID, userID và progress",
+      message: "Vui lòng truyền đầy đủ userID, fileID và detailID",
     });
   }
+
   try {
-    const result = await fileService.updateLearningProgressService({
-      fileID,
-      userID,
-      progress,
-    });
+    const result =
+      await fileServiceUpdateLearningProgress.updateLearningProgressService({
+        userID,
+        fileID,
+        detailID,
+        flashcardState,
+        quizState,
+      });
     return res.status(200).json(result);
   } catch (error) {
     return res.status(500).json({

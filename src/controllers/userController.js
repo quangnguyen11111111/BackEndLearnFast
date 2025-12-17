@@ -36,7 +36,7 @@ let handleLoginLocal=async(req,res)=>{
         })
     }
     try {
-        let data = await userService.loginLocalService(req.body.email,req.body.password)
+        let data = await userService.LoginServices(req.body)
         return res.status(200).json({
             errCode:data.errCode,
             message:data.message,
@@ -47,7 +47,8 @@ let handleLoginLocal=async(req,res)=>{
     } catch (error) {
         return res.status(500).json({
             errCode:2,
-            message:"Lỗi server"
+            message:"Lỗi server",
+            error: error.message,
         })
     }
 }
