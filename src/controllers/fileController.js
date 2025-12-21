@@ -1,7 +1,9 @@
 import fileServiceCreateFile from "../services/fileServices/createFile";
 import fileServiceGetFile from "../services/fileServices/getFile";
 import fileServiceUpdateLearningProgress from "../services/fileServices/updateLearningProgress";
-import fileService from "../services/fileService";
+import fileServiceUpdateFile from "../services/fileServices/updateFIle";
+import fileServiceGenerateAI from "../services/fileServices/generatingDataAI";
+import fileServiceDeleteFile from "../services/fileServices/deleteFile";
 
 // //hàm tạo file
 const handleCreateFile = async (req, res) => {
@@ -56,7 +58,7 @@ const handleGetDetailFile = async (req, res) => {
 };
 //lấy các file gần đây mà người dùng đã truy cập
 const handleGetRecentlyFiles = async (req, res) => {
-  const { userID } = req.query;
+  const { userID, page = 1, limit = 12 } = req.query;
 
   if (!userID) {
     return res.status(400).json({
@@ -66,7 +68,7 @@ const handleGetRecentlyFiles = async (req, res) => {
   }
 
   try {
-    const data = await fileServiceGetFile.getRecentlyFiles(userID);
+    const data = await fileServiceGetFile.getRecentlyFiles(userID, page, limit);
     return res.status(200).json(data);
   } catch (error) {
     return res.status(500).json({
@@ -160,7 +162,7 @@ const handleUpdateFile = async (req, res) => {
     });
   }
   try {
-    const result = await fileService.updateFileService({
+    const result = await fileServiceUpdateFile.updateFileService({
       fileID,
       creatorID,
       fileName,
@@ -207,6 +209,56 @@ const handleUpdateLearningProgress = async (req, res) => {
     });
   }
 };
+// --------------------- Tạo flashcards bằng AI -----------------------
+const handleAIGenerateFlashcards = async (req, res) => {
+  try {
+    const { topic, count, sourceLang, targetLang, userID } = req.body;
+
+    if (!topic || !sourceLang || !targetLang || !userID) {
+      return res.status(400).json({
+        errCode: 1,
+        message:
+          "Vui lòng cung cấp đầy đủ thông tin: topic, sourceLang, targetLang, userID",
+      });
+    }
+
+    const result = await fileServiceGenerateAI.aiGenerateFlashcardsService(
+      topic,
+      count || 10,
+      sourceLang,
+      targetLang,
+      userID
+    );
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(500).json({
+      errCode: 2,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
+// xóa file
+const handleDeleteFile = async (req, res) => {
+  const { fileID, creatorID } = req.body;
+  if (!fileID || !creatorID) {
+    return res.status(400).json({
+      errCode: 1,
+      message: "Vui lòng truyền fileID và creatorID",
+    });
+  }
+  try {
+    const result = await fileServiceDeleteFile.deleteFileService({ fileID, creatorID });
+    return res.status(200).json(result);
+  }
+  catch (error) {
+    return res.status(500).json({
+      errCode: 2,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
 module.exports = {
   // handleGetAllDetailFile:handleGetAllDetailFile,
   handleCreateFile: handleCreateFile,
@@ -218,4 +270,6 @@ module.exports = {
   handleGetAllFilesOfUser: handleGetAllFilesOfUser,
   handleUpdateFile: handleUpdateFile,
   handleUpdateLearningProgress: handleUpdateLearningProgress,
+  handleAIGenerateFlashcards: handleAIGenerateFlashcards,
+  handleDeleteFile: handleDeleteFile,
 };

@@ -39,6 +39,22 @@ module.exports = (sequelize) => {
         type: DataTypes.ENUM("public", "private"),
         defaultValue: "public",
       },
+      type: {
+        type: DataTypes.ENUM("local", "AI"),
+        defaultValue: "local",
+      },
+      sourceLang: {
+        type: DataTypes.STRING(200),
+        allowNull: true,
+      },
+      targetLang: {
+        type: DataTypes.STRING(200),
+        allowNull: true,
+      },
+      topic: {
+        type: DataTypes.STRING(200),
+        allowNull: true,
+      },
       createdAt: {
         type: DataTypes.DATE,
         allowNull: false,

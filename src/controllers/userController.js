@@ -76,7 +76,7 @@ let handleRefreshToken = async(req,res)=>{
 } 
 // //đăng nhập bằng google
 let handleLoginWithGoogle=async(req,res)=>{
-    if (!req.body) {
+    if (!req.body.idToken) {
         return res.status(500).json({
             errCode:1,
             message:"Không được để trống dữ liệu"
@@ -94,7 +94,7 @@ let handleLoginWithGoogle=async(req,res)=>{
    } catch (error) {
     return res.status(500).json({
         errCode:2,
-        message:"Lỗi server"
+        message:"Lỗi server" 
     })
    }
 }

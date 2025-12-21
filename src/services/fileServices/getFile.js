@@ -22,6 +22,14 @@ const getDetailFileService = async (fileID, userID = null) => {
       raw: true,
     });
 
+    // Lấy thông tin chủ sở hữu file (creatorID)
+    const fileMeta = await db.file.findOne({
+      where: { fileID },
+      attributes: ["creatorID"],
+      raw: true,
+    });
+    const ownerID = fileMeta?.creatorID || null;
+
     if (!fileDetails || fileDetails.length === 0) {
       data.errCode = 1;
       data.message = "Không tìm thấy chi tiết file";
@@ -35,6 +43,7 @@ const getDetailFileService = async (fileID, userID = null) => {
       data.message = "Lấy dữ liệu thành công";
       data.data = fileDetails.map((item) => ({
         ...item,
+        creatorID: ownerID,
         flashcardState: 0,
         quizState: 0,
       }));
@@ -78,6 +87,7 @@ const getDetailFileService = async (fileID, userID = null) => {
 
         return {
           ...detail,
+          creatorID: ownerID,
           flashcardState: progress.flashcardState,
           quizState: progress.quizState,
         };
@@ -94,25 +104,42 @@ const getDetailFileService = async (fileID, userID = null) => {
   }
 };
 // Lấy tối đa 12 file người dùng đã truy cập, sắp xếp lần truy cập đầu tiên ở đầu danh sách
-const getRecentlyFiles = async (userID) => {
+const getRecentlyFiles = async (userID, page = 1, limit = 12) => {
   try {
     const response = {
       errCode: 0,
       message: "Lấy dữ liệu thành công",
       data: [],
+      pagination: null,
+      canNextPage: false,
     };
 
-    // Lấy danh sách fileID từ user_file_history
+    const currentPage = Math.max(parseInt(page, 10) || 1, 1);
+    const pageSize = Math.max(parseInt(limit, 10) || 12, 1);
+    const offset = (currentPage - 1) * pageSize;
+
+    // Đếm tổng số bản ghi để tính phân trang
+    const total = await db.user_file_history.count({ where: { userID } });
+
+    // Lấy danh sách fileID từ user_file_history kèm phân trang
     const histories = await db.user_file_history.findAll({
       where: { userID },
       attributes: ["fileID", "openedAt"],
       order: [["openedAt", "DESC"]],
-      limit: 12,
+      limit: pageSize,
+      offset,
       raw: true,
     });
 
     if (!histories || histories.length === 0) {
       response.message = "Không có lịch sử truy cập";
+      response.pagination = {
+        total,
+        page: currentPage,
+        limit: pageSize,
+        pageCount: Math.ceil(total / pageSize) || 0,
+      };
+      response.canNextPage = currentPage * pageSize < total;
       return response;
     }
 
@@ -123,7 +150,7 @@ const getRecentlyFiles = async (userID) => {
         fileID: fileIDs,
         [db.Sequelize.Op.or]: [{ visibility: "public" }, { creatorID: userID }],
       },
-      attributes: ["fileID", "fileName", "totalWords"],
+      attributes: ["fileID", "fileName", "totalWords", "creatorID"],
       raw: true,
     });
 
@@ -139,9 +166,18 @@ const getRecentlyFiles = async (userID) => {
         fileID: item.fileID,
         fileName: fileMap[item.fileID] || null,
         totalWords: fileInfo?.totalWords || 0,
+        creatorID: fileInfo?.creatorID || null,
         openedAt: item.openedAt,
       };
     });
+
+    response.pagination = {
+      total,
+      page: currentPage,
+      limit: pageSize,
+      pageCount: Math.ceil(total / pageSize) || 0,
+    };
+    response.canNextPage = currentPage * pageSize < total;
 
     return response;
   } catch (error) {
@@ -167,6 +203,7 @@ const searchFilesService = async (query = "", page = 1, limit = 10) => {
         "visibility",
         "createdAt",
         "totalWords",
+        "creatorID",
       ],
       order: [["createdAt", "DESC"]],
       offset: (currentPage - 1) * pageSize,
@@ -203,6 +240,7 @@ const getTopFilesService = async () => {
         "visibility",
         "createdAt",
         "totalWords",
+        "creatorID",
         [
           db.sequelize.fn(
             "COUNT",
@@ -267,6 +305,7 @@ const getSimilarFilesService = async (userID) => {
         "visibility",
         "createdAt",
         "totalWords",
+        "creatorID",
         [
           db.sequelize.fn(
             "COUNT",
@@ -313,6 +352,7 @@ const getAllFilesOfUserService = async (userID) => {
         "visibility",
         "createdAt",
         "totalWords",
+        "creatorID",
       ],
       order: [["createdAt", "DESC"]],
       raw: true,

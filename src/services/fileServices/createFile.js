@@ -14,6 +14,9 @@ const createFileService = async (dataBody) => {
       fileName: dataBody.fileName,
       creatorID: dataBody.creatorID,
       visibility: dataBody.visibility || "public",
+      type: dataBody.type || "local",
+      sourceLang: dataBody.sourceLang || null,
+      targetLang: dataBody.targetLang || null,
     });
     if (createFile) {
       // Thêm chi tiết file nếu có

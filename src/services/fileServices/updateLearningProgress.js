@@ -12,17 +12,9 @@ const updateLearningProgressService = async (dataBody) => {
     });
 
     if (!progressRecord) {
-      // Nếu chưa tồn tại, tạo mới
-      progressRecord = await db.learning_progress.create({
-        userID,
-        fileID,
-        detailID,
-        flashcardState: flashcardState !== undefined ? flashcardState : 0,
-        quizState: quizState !== undefined ? quizState : 0,
-      });
-
-      data.errCode = 0;
-      data.message = "Tạo mới tiến độ học tập thành công";
+      data.errCode = 1;
+      data.message = "dữ liệu tiến độ học tập không tồn tại";
+      return data;
     } else {
       // Nếu đã tồn tại, cập nhật
       const updateData = {};
