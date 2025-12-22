@@ -16,6 +16,7 @@ const createNewUsers = async (dataBody) => {
         email: dataBody.email,
         password: passwordHash,
         username: dataBody.username,
+        avatar: `https://api.dicebear.com/7.x/initials/png?seed=${dataBody.username}`
       });
 
       if (createAccount) {
@@ -61,7 +62,7 @@ const LoginServices = async (dataBody) => {
     const data = {};
     const checkAccount = await checkAccountTrueFalse(dataBody.email);
 
-    if (!checkAccount) {
+    if (checkAccount) {
       const user = await db.users.findOne({
         where: { email: dataBody.email },
         raw: true,
@@ -180,6 +181,8 @@ const refreshTokenService = async (tokenData) => {
 const loginWithGoogleService = async (idToken) => {
   try {
     const dataBody = await verifyGoogleToken(idToken);
+    console.log('kiểm tra đường dẫn ảnh',dataBody.picture);
+    
     const data = {};
 
     // Tìm user đã tồn tại
@@ -213,6 +216,7 @@ const loginWithGoogleService = async (idToken) => {
         phone: dataBody.phone,
         authType: "google",
         password: "",
+        avatar: dataBody.picture,
       });
 
       const accessToken = generateAccessToken(newUser);

@@ -21,9 +21,12 @@ let handleCreateUser = async(req,res)=>
         message:data.message
     })
     } catch (error) {
+        console.log(error);
+        
         return res.status(500).json({
             errCode:2,
-            message:"Lỗi server"
+            message:"Lỗi server",
+            error: error.message,
         })
     }
 }
