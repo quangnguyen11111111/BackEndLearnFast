@@ -62,7 +62,7 @@ const LoginServices = async (dataBody) => {
     const data = {};
     const checkAccount = await checkAccountTrueFalse(dataBody.email);
 
-    if (checkAccount) {
+    if (!checkAccount) {
       const user = await db.users.findOne({
         where: { email: dataBody.email },
         raw: true,

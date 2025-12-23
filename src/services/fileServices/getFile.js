@@ -151,7 +151,14 @@ const getRecentlyFiles = async (userID, page = 1, limit = 12) => {
         [db.Sequelize.Op.or]: [{ visibility: "public" }, { creatorID: userID }],
       },
       attributes: ["fileID", "fileName", "totalWords", "creatorID"],
+      include: [
+        {
+          model: db.users,
+          attributes: ["username", "avatar"],
+        },
+      ],
       raw: true,
+      nest: true,
     });
 
     // Map dữ liệu
@@ -167,6 +174,8 @@ const getRecentlyFiles = async (userID, page = 1, limit = 12) => {
         fileName: fileMap[item.fileID] || null,
         totalWords: fileInfo?.totalWords || 0,
         creatorID: fileInfo?.creatorID || null,
+        ownerName: fileInfo?.user?.username || null,
+        ownerAvatar: fileInfo?.user?.avatar || null,
         openedAt: item.openedAt,
       };
     });
@@ -205,16 +214,35 @@ const searchFilesService = async (query = "", page = 1, limit = 10) => {
         "totalWords",
         "creatorID",
       ],
+      include: [
+        {
+          model: db.users,
+          attributes: ["username", "avatar"],
+        },
+      ],
       order: [["createdAt", "DESC"]],
       offset: (currentPage - 1) * pageSize,
       limit: pageSize,
       raw: true,
+      nest: true,
     });
+
+    // Format data với thông tin user
+    const formattedRows = rows.map((file) => ({
+      fileID: file.fileID,
+      fileName: file.fileName,
+      visibility: file.visibility,
+      createdAt: formatCreatedAt(file.createdAt),
+      totalWords: file.totalWords,
+      creatorID: file.creatorID,
+      ownerName: file.user?.username || null,
+      ownerAvatar: file.user?.avatar || null,
+    }));
 
     return {
       errCode: 0,
       message: "Lấy dữ liệu thành công",
-      data: formatFilesCreatedAt(rows),
+      data: formattedRows,
       pagination: {
         total: count,
         page: currentPage,
@@ -254,16 +282,31 @@ const getTopFilesService = async () => {
           model: db.user_file_history,
           attributes: [],
         },
+        {
+          model: db.users,
+          attributes: ["username", "avatar"],
+        },
       ],
-      group: ["file.fileID"],
+      group: ["file.fileID", "user.userID"],
       order: [[db.sequelize.literal("accessCount"), "DESC"]],
       limit: 6,
       raw: true,
+      nest: true,
     });
     if (topFiles && topFiles.length > 0) {
       data.errCode = 0;
       data.message = "Lấy top file thành công";
-      data.data = formatFilesCreatedAt(topFiles);
+      data.data = topFiles.map((file) => ({
+        fileID: file.fileID,
+        fileName: file.fileName,
+        visibility: file.visibility,
+        createdAt: formatCreatedAt(file.createdAt),
+        totalWords: file.totalWords,
+        creatorID: file.creatorID,
+        accessCount: file.accessCount,
+        ownerName: file.user?.username || null,
+        ownerAvatar: file.user?.avatar || null,
+      }));
     } else {
       data.errCode = 1;
       data.message = "Không có file nào";
@@ -275,29 +318,92 @@ const getTopFilesService = async () => {
     throw error;
   }
 };
-// Lấy các file tương tự mà người dùng hay truy cập(dựa trên lịch sử truy cập, lấy ra 6 file có cùng chủ đề và được truy cập nhiều nhất)
+// Lấy các file tương tự dựa trên tiêu đề file người dùng hay truy cập
 const getSimilarFilesService = async (userID) => {
   try {
     const data = {};
-    // Lấy danh sách fileID mà user đã truy cập
+
+    // Lấy danh sách file đã truy cập, sắp xếp theo thời gian gần nhất
     const userHistories = await db.user_file_history.findAll({
       where: { userID },
       attributes: ["fileID"],
+      order: [["openedAt", "DESC"]],
       raw: true,
     });
-    const accessedFileIDs = userHistories.map((h) => h.fileID);
-    if (accessedFileIDs.length === 0) {
+
+    if (userHistories.length === 0) {
       data.errCode = 1;
       data.message = "Người dùng chưa truy cập file nào";
       data.data = [];
       return data;
     }
-    // Lấy các file tương tự dựa trên fileID đã truy cập
+
+    const accessedFileIDs = userHistories.map((h) => h.fileID);
+
+    // Lấy thông tin fileName của các file đã truy cập
+    const accessedFiles = await db.file.findAll({
+      where: { fileID: accessedFileIDs },
+      attributes: ["fileID", "fileName"],
+      raw: true,
+    });
+
+    // Tạo map fileID -> fileName
+    const fileNameMap = {};
+    accessedFiles.forEach((f) => {
+      fileNameMap[f.fileID] = f.fileName;
+    });
+
+    // Sắp xếp lại theo thứ tự truy cập gần nhất, kèm theo index (0 = gần nhất)
+    const orderedFiles = userHistories
+      .map((h, index) => ({
+        fileName: fileNameMap[h.fileID],
+        recencyIndex: index, // 0 = gần nhất, 1 = thứ 2, ...
+      }))
+      .filter((f) => f.fileName);
+
+    // Hàm tách từ khóa từ fileName
+    const extractKeywords = (fileName) => {
+      if (!fileName) return [];
+      // Loại bỏ các ký tự đặc biệt, tách thành các từ
+      return fileName
+        .toLowerCase()
+        .split(/[\s\-_,.:;!?()[\]{}]+/)
+        .filter((word) => word.length >= 2);
+    };
+
+    // Tạo danh sách từ khóa với recencyIndex (index của file đã truy cập)
+    const keywordsByRecency = [];
+    orderedFiles.forEach(({ fileName, recencyIndex }) => {
+      const keywords = extractKeywords(fileName);
+      keywords.forEach((keyword) => {
+        keywordsByRecency.push({ keyword, recencyIndex });
+      });
+    });
+
+    if (keywordsByRecency.length === 0) {
+      data.errCode = 1;
+      data.message = "Không có từ khóa để tìm kiếm";
+      data.data = [];
+      return data;
+    }
+
+    // Lấy danh sách từ khóa unique
+    const uniqueKeywords = [
+      ...new Set(keywordsByRecency.map((k) => k.keyword)),
+    ];
+
+    // Tạo điều kiện tìm kiếm với các từ khóa
+    const searchConditions = uniqueKeywords.map((keyword) => ({
+      fileName: { [db.Sequelize.Op.like]: `%${keyword}%` },
+    }));
+
+    // Tìm các file tương tự dựa trên từ khóa
     const similarFiles = await db.file.findAll({
       subQuery: false,
       where: {
         fileID: { [db.Sequelize.Op.notIn]: accessedFileIDs },
         visibility: "public",
+        [db.Sequelize.Op.or]: searchConditions,
       },
       attributes: [
         "fileID",
@@ -319,16 +425,78 @@ const getSimilarFilesService = async (userID) => {
           model: db.user_file_history,
           attributes: [],
         },
+        {
+          model: db.users,
+          attributes: ["username", "avatar"],
+        },
       ],
-      group: ["file.fileID"],
-      order: [[db.sequelize.literal("accessCount"), "DESC"]],
-      limit: 6,
+      group: ["file.fileID", "user.userID"],
       raw: true,
+      nest: true,
     });
-    if (similarFiles && similarFiles.length > 0) {
+
+    // Tính điểm cho mỗi file: đếm số từ khóa khớp với từng file đã truy cập
+    const filesWithScore = similarFiles.map((file) => {
+      const fileKeywords = extractKeywords(file.fileName);
+
+      // Đếm số từ khóa khớp với từng file đã truy cập (theo recencyIndex)
+      const matchCountByRecency = {};
+
+      keywordsByRecency.forEach(({ keyword, recencyIndex }) => {
+        if (fileKeywords.includes(keyword)) {
+          if (!matchCountByRecency[recencyIndex]) {
+            matchCountByRecency[recencyIndex] = 0;
+          }
+          matchCountByRecency[recencyIndex]++;
+        }
+      });
+
+      // Tìm recencyIndex nhỏ nhất có match
+      const matchedIndices = Object.keys(matchCountByRecency).map(Number);
+      const bestRecencyIndex =
+        matchedIndices.length > 0 ? Math.min(...matchedIndices) : 9999;
+
+      // Số từ khóa khớp với file gần nhất (recencyIndex = bestRecencyIndex)
+      const matchCountWithBest = matchCountByRecency[bestRecencyIndex] || 0;
+
+      return {
+        ...file,
+        bestRecencyIndex,
+        matchCountWithBest, // Số từ khóa khớp với file gần nhất mà file này match
+      };
+    });
+
+    // Sắp xếp theo:
+    // 1. bestRecencyIndex tăng dần (file khớp với file gần nhất lên trước)
+    // 2. matchCountWithBest giảm dần (trong cùng nhóm recency, file khớp nhiều từ khóa hơn lên trước)
+    // 3. accessCount giảm dần (cùng số từ khóa khớp, lượt truy cập cao lên trước)
+    filesWithScore.sort((a, b) => {
+      if (a.bestRecencyIndex !== b.bestRecencyIndex) {
+        return a.bestRecencyIndex - b.bestRecencyIndex;
+      }
+      if (a.matchCountWithBest !== b.matchCountWithBest) {
+        return b.matchCountWithBest - a.matchCountWithBest;
+      }
+      return (parseInt(b.accessCount) || 0) - (parseInt(a.accessCount) || 0);
+    });
+
+    // Lấy tối đa 6 file
+    const topFiles = filesWithScore.slice(0, 6);
+
+    if (topFiles && topFiles.length > 0) {
       data.errCode = 0;
       data.message = "Lấy file tương tự thành công";
-      data.data = formatFilesCreatedAt(similarFiles);
+      data.data = topFiles.map((file) => ({
+        fileID: file.fileID,
+        fileName: file.fileName,
+        visibility: file.visibility,
+        createdAt: formatCreatedAt(file.createdAt),
+        totalWords: file.totalWords,
+        creatorID: file.creatorID,
+        accessCount: file.accessCount,
+        ownerName: file.user?.username || null,
+        ownerAvatar: file.user?.avatar || null,
+      }));
     } else {
       data.errCode = 1;
       data.message = "Không có file tương tự";
@@ -354,12 +522,28 @@ const getAllFilesOfUserService = async (userID) => {
         "totalWords",
         "creatorID",
       ],
+      include: [
+        {
+          model: db.users,
+          attributes: ["username", "avatar"],
+        },
+      ],
       order: [["createdAt", "DESC"]],
       raw: true,
+      nest: true,
     });
     data.errCode = 0;
     data.message = "Lấy tất cả các file của người dùng thành công";
-    data.data = formatFilesCreatedAt(userFiles);
+    data.data = userFiles.map((file) => ({
+      fileID: file.fileID,
+      fileName: file.fileName,
+      visibility: file.visibility,
+      createdAt: formatCreatedAt(file.createdAt),
+      totalWords: file.totalWords,
+      creatorID: file.creatorID,
+      ownerName: file.user?.username || null,
+      ownerAvatar: file.user?.avatar || null,
+    }));
     return data;
   } catch (error) {
     console.error("Lỗi khi lấy tất cả các file của người dùng:", error);
