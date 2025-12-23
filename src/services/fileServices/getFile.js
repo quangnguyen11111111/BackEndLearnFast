@@ -4,13 +4,6 @@ const formatCreatedAt = (dateString) => {
   return dateString ? new Date(dateString).toLocaleDateString("vi-VN") : null;
 };
 
-// Hàm format cho mảng files
-const formatFilesCreatedAt = (files) => {
-  return files.map((file) => ({
-    ...file,
-    createdAt: formatCreatedAt(file.createdAt),
-  }));
-};
 // Lấy dữ liệu chi tiết của file, kèm tiến độ học nếu có userID
 const getDetailFileService = async (fileID, userID = null) => {
   try {
@@ -103,7 +96,7 @@ const getDetailFileService = async (fileID, userID = null) => {
     throw error;
   }
 };
-// Lấy tối đa 12 file người dùng đã truy cập, sắp xếp lần truy cập đầu tiên ở đầu danh sách
+// Lấy tối thiểu 12 file người dùng đã truy cập, sắp xếp lần truy cập đầu tiên ở đầu danh sách
 const getRecentlyFiles = async (userID, page = 1, limit = 12) => {
   try {
     const response = {
@@ -176,7 +169,7 @@ const getRecentlyFiles = async (userID, page = 1, limit = 12) => {
         creatorID: fileInfo?.creatorID || null,
         ownerName: fileInfo?.user?.username || null,
         ownerAvatar: fileInfo?.user?.avatar || null,
-        openedAt: item.openedAt,
+        openedAt: formatCreatedAt(item.openedAt),
       };
     });
 
@@ -256,12 +249,16 @@ const searchFilesService = async (query = "", page = 1, limit = 10) => {
   }
 };
 //Lấy dữ liệu top 6 file được truy cập nhiều nhất
-const getTopFilesService = async () => {
+const getTopFilesService = async (userID) => {
   try {
     const data = {};
     const topFiles = await db.file.findAll({
       subQuery: false,
-      where: { visibility: "public" },
+      where: {
+        visibility: "public",
+        // Không lấy file của người dùng hiện tại
+        ...(userID && { creatorID: { [db.Sequelize.Op.ne]: userID } }),
+      },
       attributes: [
         "fileID",
         "fileName",

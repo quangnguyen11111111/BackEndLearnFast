@@ -100,8 +100,14 @@ const handleSearchFiles = async (req, res) => {
 };
 // lấy top 6 bộ thẻ được truy cập nhiều nhất
 const handleGetTopFiles = async (req, res) => {
+  if (!req.query.userID) {
+    return res.status(400).json({
+      errCode: 1,
+      message: "Vui lòng truyền userID",
+    });
+  }
   try {
-    const result = await fileServiceGetFile.getTopFilesService();
+    const result = await fileServiceGetFile.getTopFilesService(req.query.userID);
     return res.status(200).json(result);
   } catch (error) {
     return res.status(500).json({
