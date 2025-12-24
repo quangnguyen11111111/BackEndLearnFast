@@ -1,7 +1,11 @@
 import db from "../../models/index";
 // Helper function để format createdAt
 const formatCreatedAt = (dateString) => {
-  return dateString ? new Date(dateString).toLocaleDateString("vi-VN") : null;
+  if (!dateString) return null;
+  const date = new Date(dateString);
+  const month = date.getMonth() + 1;
+  const year = date.getFullYear();
+  return `THÁNG ${month} NĂM ${year}`;
 };
 
 // Lấy dữ liệu chi tiết của file, kèm tiến độ học nếu có userID
