@@ -25,6 +25,11 @@ const getDetailFileService = async (fileID, userID = null) => {
       attributes: ["creatorID"],
       raw: true,
     });
+    const ownerInfo = await db.users.findOne({
+      where: { userID: fileMeta?.creatorID || null },
+      attributes: ["avatar", "username"],
+      raw: true,
+    });
     const ownerID = fileMeta?.creatorID || null;
 
     if (!fileDetails || fileDetails.length === 0) {
@@ -38,6 +43,8 @@ const getDetailFileService = async (fileID, userID = null) => {
     if (!userID) {
       data.errCode = 0;
       data.message = "Lấy dữ liệu thành công";
+      data.ownerAvatar = ownerInfo?.avatar || null;
+      data.ownerName = ownerInfo?.username || null;
       data.data = fileDetails.map((item) => ({
         ...item,
         creatorID: ownerID,
@@ -94,6 +101,8 @@ const getDetailFileService = async (fileID, userID = null) => {
     data.errCode = 0;
     data.message = "Lấy dữ liệu thành công";
     data.data = detailsWithProgress;
+    data.ownerAvatar = ownerInfo?.avatar || null;
+    data.ownerName = ownerInfo?.username || null;
     return data;
   } catch (error) {
     console.error("Lỗi khi lấy chi tiết file:", error);

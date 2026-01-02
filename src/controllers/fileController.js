@@ -47,6 +47,10 @@ const handleGetDetailFile = async (req, res) => {
       errCode: data.errCode,
       message: data.message,
       data: data.data,
+      ownerInfo: {
+        avatar: data.ownerAvatar,
+        name: data.ownerName,
+      },
     });
   } catch (error) {
     return res.status(500).json({
@@ -107,7 +111,9 @@ const handleGetTopFiles = async (req, res) => {
     });
   }
   try {
-    const result = await fileServiceGetFile.getTopFilesService(req.query.userID);
+    const result = await fileServiceGetFile.getTopFilesService(
+      req.query.userID
+    );
     return res.status(200).json(result);
   } catch (error) {
     return res.status(500).json({
@@ -254,10 +260,12 @@ const handleDeleteFile = async (req, res) => {
     });
   }
   try {
-    const result = await fileServiceDeleteFile.deleteFileService({ fileID, creatorID });
+    const result = await fileServiceDeleteFile.deleteFileService({
+      fileID,
+      creatorID,
+    });
     return res.status(200).json(result);
-  }
-  catch (error) {
+  } catch (error) {
     return res.status(500).json({
       errCode: 2,
       message: "Lỗi server",
