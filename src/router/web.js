@@ -21,6 +21,12 @@ let initWebRoutes = (app) => {
   router.put("/api/files", fileController.handleUpdateFile);// cập nhật file (phải kiểm tra đó có đúng là người sở hữu file không)
   router.put("/api/files/progress", fileController.handleUpdateLearningProgress);// cập nhật quá trình học tập của người dùng
   router.delete("/api/files", fileController.handleDeleteFile); // xóa file
+  // lấy top 10 người có điểm pointCardMatching cao nhất trong file và trả về vị trí của người dùng trong bảng xếp hạng
+  router.get("/api/files/leaderboard", fileController.handleGetLeaderboard);
+  // Cập nhật điểm của người dùng trong các chế độ game trong user_file_history
+  router.put("/api/files/updatePoints", fileController.handleUpdateUserFilePoints);
+  // Lấy điểm của người dùng trong game block ở file cụ thể
+  router.get("/api/files/blockGame/points", fileController.handleGetBlockGamePoints);
 // --------------------- Folder routes -----------------------
 
 // --------------------- AI api -----------------------

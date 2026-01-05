@@ -23,6 +23,14 @@ module.exports = (sequelize) => {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
       },
+      pointCardMatching: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      pointBlockGame: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0
+      },
     },
     {
       sequelize,

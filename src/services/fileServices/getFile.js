@@ -22,7 +22,7 @@ const getDetailFileService = async (fileID, userID = null) => {
     // Lấy thông tin chủ sở hữu file (creatorID)
     const fileMeta = await db.file.findOne({
       where: { fileID },
-      attributes: ["creatorID"],
+      attributes: ["creatorID", "fileName"],
       raw: true,
     });
     const ownerInfo = await db.users.findOne({
@@ -45,6 +45,7 @@ const getDetailFileService = async (fileID, userID = null) => {
       data.message = "Lấy dữ liệu thành công";
       data.ownerAvatar = ownerInfo?.avatar || null;
       data.ownerName = ownerInfo?.username || null;
+      data.fileName = fileMeta?.fileName || null;
       data.data = fileDetails.map((item) => ({
         ...item,
         creatorID: ownerID,
@@ -103,6 +104,7 @@ const getDetailFileService = async (fileID, userID = null) => {
     data.data = detailsWithProgress;
     data.ownerAvatar = ownerInfo?.avatar || null;
     data.ownerName = ownerInfo?.username || null;
+    data.fileName = fileMeta?.fileName || null;
     return data;
   } catch (error) {
     console.error("Lỗi khi lấy chi tiết file:", error);
@@ -561,6 +563,86 @@ const getAllFilesOfUserService = async (userID) => {
   }
 };
 
+// lấy top 10 người có điểm pointCardMatching cao nhất(pointCardMatching càng thấp xếp hạng càng cao) trong file và trả về vị trí của người dùng trong bảng xếp hạng
+const getLeaderboardService = async (fileID, userID) => {
+  try {
+    const data = {};
+    // Lấy top 10 người có điểm pointCardMatching cao nhất trong file
+    const topUsers = await db.user_file_history.findAll({
+      where: {
+        fileID,
+        pointCardMatching: { [db.Sequelize.Op.ne]: null },
+      },
+      attributes: ["userID", "pointCardMatching"],
+      order: [["pointCardMatching", "ASC"]],
+      limit: 10,
+      include: [
+        {
+          model: db.users,
+          attributes: ["username", "avatar"],
+        },
+      ],
+      raw: true,
+      nest: true,
+    });
+    // Lấy vị trí của userID trong bảng xếp hạng
+    const allUsers = await db.user_file_history.findAll({
+      where: {
+        fileID,
+        pointCardMatching: { [db.Sequelize.Op.ne]: null },
+      },
+      attributes: ["userID", "pointCardMatching"],
+      order: [["pointCardMatching", "ASC"]],
+      raw: true,
+    });
+    const userRank = allUsers.findIndex((u) => u.userID === userID) + 1;
+    data.errCode = 0;
+    data.message = "Lấy bảng xếp hạng thành công";
+    data.data = {
+      topUsers: topUsers.map((user, index) => ({
+        rank: index + 1,
+        userID: user.userID,
+        pointCardMatching: user.pointCardMatching,
+        ownerName: user.user?.username || null,
+        ownerAvatar: user.user?.avatar || null,
+      })),
+      userRank: userRank > 0 ? userRank : null,
+    };
+    return data;
+  } catch (error) {
+    console.error("Lỗi khi lấy bảng xếp hạng:", error);
+    throw error;
+  }
+};
+// Lấy điểm của người dùng trong game block ở file cụ thể
+const getBlockGamePointsService = async (userID, fileID) => {
+  try {
+    const data = {};
+    // Tìm bản ghi user_file_history
+    let userFileHistory = await db.user_file_history.findOne({
+      where: { userID, fileID },
+      raw: true,
+    });
+
+    if (!userFileHistory) {
+      data.errCode = 1;
+      data.message = "file history không tồn tại cho user này";
+      data.data = null;
+      return data;
+    }
+    data.errCode = 0;
+    data.message = "Lấy điểm game block thành công";
+    data.data = {
+      pointBlockGame: userFileHistory.pointBlockGame || 0,
+    };
+    return data;
+  } catch (error) {
+    console.error("Lỗi khi lấy điểm game block:", error);
+    throw error;
+  }
+};
+
+//
 module.exports = {
   getDetailFileService: getDetailFileService,
   getRecentlyFiles: getRecentlyFiles,
@@ -568,4 +650,6 @@ module.exports = {
   getTopFilesService: getTopFilesService,
   getSimilarFilesService: getSimilarFilesService,
   getAllFilesOfUserService: getAllFilesOfUserService,
+  getLeaderboardService: getLeaderboardService,
+  getBlockGamePointsService: getBlockGamePointsService,
 };

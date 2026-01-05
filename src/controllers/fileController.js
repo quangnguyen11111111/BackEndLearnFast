@@ -4,6 +4,7 @@ import fileServiceUpdateLearningProgress from "../services/fileServices/updateLe
 import fileServiceUpdateFile from "../services/fileServices/updateFIle";
 import fileServiceGenerateAI from "../services/fileServices/generatingDataAI";
 import fileServiceDeleteFile from "../services/fileServices/deleteFile";
+import fileServiceUpdateUserFilePoints from "../services/fileServices/updateUserFileHistory";
 
 // //hàm tạo file
 const handleCreateFile = async (req, res) => {
@@ -50,6 +51,7 @@ const handleGetDetailFile = async (req, res) => {
       ownerInfo: {
         avatar: data.ownerAvatar,
         name: data.ownerName,
+        fileName: data.fileName,
       },
     });
   } catch (error) {
@@ -273,6 +275,80 @@ const handleDeleteFile = async (req, res) => {
     });
   }
 };
+// lấy top 10 người có điểm pointCardMatching cao nhất trong file và trả về vị trí của người dùng trong bảng xếp hạng
+const handleGetLeaderboard = async (req, res) => {
+  const { fileID, userID } = req.query;
+  if (!fileID || !userID) {
+    return res.status(400).json({
+      errCode: 1,
+      message: "Vui lòng truyền fileID và userID",
+    });
+  }
+  try {
+    const result = await fileServiceGetFile.getLeaderboardService(
+      fileID,
+      userID
+    );
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(500).json({
+      errCode: 2,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
+// Cập nhật điểm của người dùng trong các chế độ game trong user_file_history
+const handleUpdateUserFilePoints = async (req, res) => {
+  const { userID, fileID, mode, point } = req.body;
+  if (!userID || !fileID) {
+    return res.status(400).json({
+      errCode: 1,
+      message: "Vui lòng truyền userID và fileID",
+    });
+  }
+  try {
+    const result =
+      await fileServiceUpdateUserFilePoints.updateUserFilePointsService({
+        userID,
+        fileID,
+        mode,
+        point,
+      });
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(500).json({
+      errCode: 2,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
+
+// Lấy điểm của người dùng trong game block ở file cụ thể
+const handleGetBlockGamePoints = async (req, res) => {
+  const { userID, fileID } = req.query;
+  if (!userID || !fileID) {
+    return res.status(400).json({
+      errCode: 1,
+      message: "Vui lòng truyền userID và fileID",
+    });
+  }
+  try {
+    const result = await fileServiceGetFile.getBlockGamePointsService(
+      userID,
+      fileID
+    );
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(500).json({
+      errCode: 2,
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   // handleGetAllDetailFile:handleGetAllDetailFile,
   handleCreateFile: handleCreateFile,
@@ -286,4 +362,7 @@ module.exports = {
   handleUpdateLearningProgress: handleUpdateLearningProgress,
   handleAIGenerateFlashcards: handleAIGenerateFlashcards,
   handleDeleteFile: handleDeleteFile,
+  handleGetLeaderboard: handleGetLeaderboard,
+  handleUpdateUserFilePoints: handleUpdateUserFilePoints,
+  handleGetBlockGamePoints: handleGetBlockGamePoints,
 };
